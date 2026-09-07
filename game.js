@@ -270,17 +270,17 @@
     road = expandTrack(track);
     player = {
       z: 0,
-      x: 0, // -1 .. 1 relative to road center
+      x: 0, // road-relative: 0=center, ±1 ≈ edges
       speed: 0,
-      maxSpeed: 260,
-      accel: 125,
+      maxSpeed: 240,
+      accel: 130,
       brake: 160,
-      coast: 55,
-      steerPower: 3.4,       // lateral authority
-      offRoadFactor: 0.72,   // still can accelerate / reclaim
-      centrifugal: 0.05,     // road-space units/s per curve unit at full speed
-      roadLimit: 1.08,       // |x| within this = on road
-      softLimit: 1.85,       // outer soft wall
+      coast: 50,
+      steerPower: 2.8,
+      offRoadFactor: 0.85,
+      centrifugal: 0.012,
+      roadLimit: 1.15,
+      softLimit: 1.7,
     };
     race = {
       lap: 1,
@@ -356,7 +356,7 @@
     race.lapTime += dt * 1000;
     if (race.crashFlash > 0) race.crashFlash -= dt;
 
-    // Physics — curves challenge but stay recoverable
+    // Physics — phone-friendly OutRun lateral model
     const steer = getSteer();
     const absX = Math.abs(player.x);
     const onRoad = absX < player.roadLimit;
@@ -365,50 +365,44 @@
     if (accelHeld && onRoad) {
       player.speed += player.accel * dt;
     } else if (accelHeld && !onRoad) {
-      // Shoulder: reduced but usable pull so you can climb back on
       player.speed += player.accel * player.offRoadFactor * dt;
     } else {
       player.speed -= player.coast * dt;
-      if (!onRoad) player.speed -= player.brake * 0.12 * dt;
+      if (!onRoad) player.speed -= player.brake * 0.15 * dt;
     }
-    // Mild speed cap off-road (not a hard wall)
-    if (!onRoad && player.speed > player.maxSpeed * 0.78) {
-      player.speed -= player.brake * 0.18 * dt;
+    if (!onRoad && player.speed > player.maxSpeed * 0.8) {
+      player.speed -= player.brake * 0.2 * dt;
     }
     player.speed = Math.max(0, Math.min(player.maxSpeed, player.speed));
 
-    // Steering (player.x is road-relative; car sprite stays centered on screen)
-    const steerAuth = 0.55 + 0.45 * Math.max(0.2, spdRatio);
-    const recovering =
-      !onRoad && Math.abs(steer) > 0.15 && Math.sign(steer) === -Math.sign(player.x || steer);
-    const recoverBoost = recovering ? 1.6 : 1;
-    player.x += steer * player.steerPower * steerAuth * recoverBoost * dt;
-
-    // Centrifugal: outward in road space. Tuned so full steer beats a curve≈5 at speed.
     const segIdx = Math.floor(player.z) % road.length;
     const seg = road[segIdx] || { curve: 0 };
-    const curvePush =
-      seg.curve * player.centrifugal * Math.pow(Math.max(0, spdRatio), 1.2);
+
+    // No standstill lateral slide (was pushing you into grass at 0 km/h)
+    const speedGate = Math.min(1, player.speed / 35);
+    player.x += steer * player.steerPower * speedGate * dt;
+
+    // Tiny centrifugal — must stay far below steer authority
+    const curvePush = seg.curve * player.centrifugal * spdRatio * spdRatio;
     player.x -= curvePush * dt;
 
-    // If counter-steering into the curve, bleed a bit of push (tire grip fantasy)
-    if (Math.abs(steer) > 0.2 && Math.sign(steer) === Math.sign(seg.curve || steer)) {
-      player.x += curvePush * 0.35 * Math.abs(steer) * dt;
+    // Soft center assist for phone play
+    player.x -= player.x * 0.55 * dt;
+
+    // Strong reclaim when off asphalt
+    if (!onRoad) {
+      const towardRoad = Math.abs(steer) < 0.1 || Math.sign(steer) === -Math.sign(player.x || 1);
+      player.x -= Math.sign(player.x || 1) * (towardRoad ? 2.4 : 1.1) * dt;
     }
 
-    // Soft walls — bounce lightly, don't lock you out
     if (player.x < -player.softLimit) {
       player.x = -player.softLimit;
-      player.speed *= 0.985;
-      race.crashFlash = 0.08;
+      player.speed *= 0.97;
+      race.crashFlash = 0.1;
     } else if (player.x > player.softLimit) {
       player.x = player.softLimit;
-      player.speed *= 0.985;
-      race.crashFlash = 0.08;
-    }
-    // Gentle pull toward road when deep off-road (helps reclaim)
-    if (absX > player.roadLimit + 0.15) {
-      player.x -= Math.sign(player.x) * 0.35 * dt;
+      player.speed *= 0.97;
+      race.crashFlash = 0.1;
     }
 
     // Advance
@@ -502,9 +496,11 @@
     const baseIdx = Math.floor(player.z);
     const camY = camH + (road[baseIdx % road.length] ? road[baseIdx % road.length].y * 40 : 0);
 
+    // Jake Gordon-style: camX = player.x * roadW; curves accumulate ahead of camera
     const drawDist = 90;
     let x = 0;
     let dx = 0;
+    const camX = player.x * roadW;
 
     const pts = [];
     for (let n = 0; n < drawDist; n++) {
@@ -512,6 +508,8 @@
       const seg = road[i];
       const zWorld = (n - (player.z - baseIdx)) * segLen;
       if (zWorld <= 0) {
+        dx += seg.curve * 0.12;
+        x += dx;
         pts.push(null);
         continue;
       }
@@ -519,10 +517,10 @@
       const scale = camDepth / (zWorld / 100);
       const screenY = H / 2 + (scale * yWorld) / 4;
       const screenW = scale * roadW;
-      dx += seg.curve * 0.18;
-      x += dx;
-      const screenX = W / 2 + scale * (-player.x * roadW * 0.5) + x * scale * 4;
+      const screenX = W / 2 + scale * (0 - camX - x);
       pts.push({ x: screenX, y: screenY, w: screenW, scale, i, seg });
+      dx += seg.curve * 0.12;
+      x += dx;
     }
 
     const shoulderCol = track.shoulderColor || shade(track.color, 1.15);
