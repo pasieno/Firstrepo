@@ -278,7 +278,7 @@
       coast: 55,
       steerPower: 3.4,       // lateral authority
       offRoadFactor: 0.72,   // still can accelerate / reclaim
-      centrifugal: 0.048,    // ~80% lower than 0.24 per player feedback
+      centrifugal: 0.05,     // road-space units/s per curve unit at full speed
       roadLimit: 1.08,       // |x| within this = on road
       softLimit: 1.85,       // outer soft wall
     };
@@ -377,19 +377,24 @@
     }
     player.speed = Math.max(0, Math.min(player.maxSpeed, player.speed));
 
-    // Steering: keep authority at low speed so you can reclaim the road
-    // Blend base grip + speed grip (OutRun-ish)
-    const steerAuth = 0.42 + 0.58 * Math.max(0.25, spdRatio);
-    // Extra bite when recovering from the shoulder
-    const recoverBoost = (!onRoad && Math.sign(steer) === -Math.sign(player.x || steer)) ? 1.35 : 1;
+    // Steering (player.x is road-relative; car sprite stays centered on screen)
+    const steerAuth = 0.55 + 0.45 * Math.max(0.2, spdRatio);
+    const recovering =
+      !onRoad && Math.abs(steer) > 0.15 && Math.sign(steer) === -Math.sign(player.x || steer);
+    const recoverBoost = recovering ? 1.6 : 1;
     player.x += steer * player.steerPower * steerAuth * recoverBoost * dt;
 
-    // Centrifugal: scales with speed^1.35 so fast = scary but not instant eject
+    // Centrifugal: outward in road space. Tuned so full steer beats a curve≈5 at speed.
     const segIdx = Math.floor(player.z) % road.length;
     const seg = road[segIdx] || { curve: 0 };
     const curvePush =
-      seg.curve * player.centrifugal * Math.pow(Math.max(0, spdRatio), 1.35);
+      seg.curve * player.centrifugal * Math.pow(Math.max(0, spdRatio), 1.2);
     player.x -= curvePush * dt;
+
+    // If counter-steering into the curve, bleed a bit of push (tire grip fantasy)
+    if (Math.abs(steer) > 0.2 && Math.sign(steer) === Math.sign(seg.curve || steer)) {
+      player.x += curvePush * 0.35 * Math.abs(steer) * dt;
+    }
 
     // Soft walls — bounce lightly, don't lock you out
     if (player.x < -player.softLimit) {
@@ -514,9 +519,9 @@
       const scale = camDepth / (zWorld / 100);
       const screenY = H / 2 + (scale * yWorld) / 4;
       const screenW = scale * roadW;
-      dx += seg.curve * 0.35;
+      dx += seg.curve * 0.18;
       x += dx;
-      const screenX = W / 2 + scale * (-player.x * roadW * 0.5) + x * scale * 8;
+      const screenX = W / 2 + scale * (-player.x * roadW * 0.5) + x * scale * 4;
       pts.push({ x: screenX, y: screenY, w: screenW, scale, i, seg });
     }
 
@@ -729,7 +734,9 @@
   }
 
   function drawCar(W, H) {
-    const cx = W / 2 + player.x * W * 0.08;
+    // Car stays near screen center; road projection carries player.x (classic OutRun).
+    // Moving the sprite by player.x fought the road scale and looked like instant ejects.
+    const cx = W / 2;
     const cy = H * 0.78;
     const s = W / 320;
     const steer = getSteer();
