@@ -47,12 +47,14 @@
         <canvas id="game" width="640" height="480"></canvas>
       </div>
       <div id="controls">
-        <div class="steer-row">
-          <label for="steer">STEER</label>
-          <input type="range" id="steer" min="0" max="100" value="50" />
+        <div class="controls-row">
+          <div class="steer-col">
+            <label for="steer">STEER</label>
+            <input type="range" id="steer" min="0" max="100" value="50" />
+          </div>
+          <button type="button" id="accel">ACCEL</button>
         </div>
-        <button type="button" id="accel">ACCELERATE</button>
-        <p class="hint">Space / ↑ also accelerate · stay on the road!</p>
+        <p class="hint">Hold ACCEL · slide STEER · Space / ↑ also gas</p>
       </div>
     </section>
 

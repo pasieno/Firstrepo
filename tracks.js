@@ -16,21 +16,21 @@ const TRACKS = [
     // Gentle intro track ~90–120s for a decent player
     segments: [
       { curve: 0, hill: 0, length: 120 },
-      { curve: 2, hill: 0, length: 75 },
+      { curve: 1.5, hill: 0, length: 75 },
       { curve: 0, hill: 1, length: 60 },
-      { curve: -3, hill: 0, length: 90 },
+      { curve: -2.2, hill: 0, length: 90 },
       { curve: 0, hill: -1, length: 60 },
-      { curve: 4, hill: 0, length: 105 },
-      { curve: -2, hill: 1, length: 75 },
+      { curve: 2.8, hill: 0, length: 105 },
+      { curve: -1.6, hill: 1, length: 75 },
       { curve: 0, hill: 0, length: 90 },
-      { curve: -4, hill: 0, length: 120 },
-      { curve: 3, hill: -1, length: 90 },
+      { curve: -2.8, hill: 0, length: 120 },
+      { curve: 2.2, hill: -1, length: 90 },
       { curve: 0, hill: 0, length: 75 },
-      { curve: 2, hill: 0, length: 60 },
+      { curve: 1.5, hill: 0, length: 60 },
       { curve: -1, hill: 1, length: 75 },
       { curve: 0, hill: 0, length: 105 },
-      { curve: 5, hill: 0, length: 90 },
-      { curve: -3, hill: 0, length: 75 },
+      { curve: 3.2, hill: 0, length: 90 },
+      { curve: -2.2, hill: 0, length: 75 },
       { curve: 0, hill: 0, length: 120 },
     ],
   },
@@ -46,22 +46,22 @@ const TRACKS = [
     laps: 2,
     segments: [
       { curve: 0, hill: 0, length: 90 },
-      { curve: 3, hill: 2, length: 105 },
-      { curve: -2, hill: 3, length: 90 },
+      { curve: 2.4, hill: 2, length: 105 },
+      { curve: -1.8, hill: 3, length: 90 },
       { curve: 0, hill: 2, length: 60 },
-      { curve: -5, hill: 1, length: 120 },
-      { curve: 4, hill: 0, length: 90 },
+      { curve: -3.8, hill: 1, length: 120 },
+      { curve: 3.2, hill: 0, length: 90 },
       { curve: 0, hill: -2, length: 75 },
-      { curve: 6, hill: -1, length: 105 },
-      { curve: -4, hill: -2, length: 90 },
+      { curve: 4.2, hill: -1, length: 105 },
+      { curve: -3.2, hill: -2, length: 90 },
       { curve: 0, hill: 0, length: 60 },
-      { curve: -3, hill: 2, length: 105 },
-      { curve: 5, hill: 1, length: 120 },
-      { curve: -6, hill: 0, length: 90 },
-      { curve: 2, hill: -1, length: 75 },
+      { curve: -2.4, hill: 2, length: 105 },
+      { curve: 3.8, hill: 1, length: 120 },
+      { curve: -4.2, hill: 0, length: 90 },
+      { curve: 1.8, hill: -1, length: 75 },
       { curve: 0, hill: 0, length: 90 },
-      { curve: 4, hill: 1, length: 105 },
-      { curve: -2, hill: 0, length: 75 },
+      { curve: 3.2, hill: 1, length: 105 },
+      { curve: -1.8, hill: 0, length: 75 },
       { curve: 0, hill: 0, length: 105 },
     ],
   },
@@ -77,21 +77,21 @@ const TRACKS = [
     laps: 2,
     segments: [
       { curve: 0, hill: 0, length: 105 },
-      { curve: -2, hill: 0, length: 90 },
-      { curve: 5, hill: 0, length: 120 },
+      { curve: -1.8, hill: 0, length: 90 },
+      { curve: 3.6, hill: 0, length: 120 },
       { curve: 0, hill: 1, length: 60 },
-      { curve: -6, hill: 0, length: 135 },
-      { curve: 3, hill: -1, length: 90 },
-      { curve: -4, hill: 0, length: 105 },
+      { curve: -4.5, hill: 0, length: 135 },
+      { curve: 2.4, hill: -1, length: 90 },
+      { curve: -3.2, hill: 0, length: 105 },
       { curve: 0, hill: 0, length: 75 },
-      { curve: 7, hill: 0, length: 120 },
-      { curve: -3, hill: 1, length: 90 },
+      { curve: 5.0, hill: 0, length: 120 },
+      { curve: -2.4, hill: 1, length: 90 },
       { curve: 0, hill: 0, length: 60 },
-      { curve: -5, hill: 0, length: 105 },
-      { curve: 4, hill: 0, length: 90 },
+      { curve: -3.8, hill: 0, length: 105 },
+      { curve: 3.2, hill: 0, length: 90 },
       { curve: 0, hill: -1, length: 75 },
-      { curve: 2, hill: 0, length: 90 },
-      { curve: -7, hill: 0, length: 120 },
+      { curve: 1.8, hill: 0, length: 90 },
+      { curve: -5.0, hill: 0, length: 120 },
       { curve: 1, hill: 0, length: 75 },
       { curve: 0, hill: 0, length: 120 },
     ],
@@ -103,13 +103,14 @@ function expandTrack(track) {
   for (const seg of track.segments) {
     for (let i = 0; i < seg.length; i++) {
       const t = i / seg.length;
-      // Ease curves in/out within segment
+      // Ease curves in/out within segment (longer ramp = less snap)
+      const ramp = Math.min(14, Math.floor(seg.length * 0.22));
       let curve = seg.curve;
-      if (i < 5) curve *= i / 5;
-      else if (i > seg.length - 5) curve *= (seg.length - i) / 5;
+      if (i < ramp) curve *= i / ramp;
+      else if (i > seg.length - ramp) curve *= (seg.length - i) / ramp;
       let hill = seg.hill;
-      if (i < 5) hill *= i / 5;
-      else if (i > seg.length - 5) hill *= (seg.length - i) / 5;
+      if (i < ramp) hill *= i / ramp;
+      else if (i > seg.length - ramp) hill *= (seg.length - i) / ramp;
       road.push({ curve, hill, y: 0 });
     }
   }
