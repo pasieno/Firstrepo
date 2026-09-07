@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
+  <meta name="theme-color" content="#0a0a12" />
+  <title>Pasrally 2000</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div id="app">
+    <!-- MENU -->
+    <section id="screen-menu" class="screen active">
+      <div class="car-deco" aria-hidden="true">🏎️</div>
+      <h1 class="title">PASRALLY 2000</h1>
+      <p class="subtitle">ARCADE RALLY</p>
+      <button type="button" class="menu-btn" id="btn-start">START</button>
+      <button type="button" class="menu-btn secondary" id="btn-scores">HIGH SCORES</button>
+      <p class="hint blink" style="margin-top:1.5rem">HOLD GAS · SLIDE TO STEER</p>
+    </section>
+
+    <!-- TRACK SELECT -->
+    <section id="screen-tracks" class="screen">
+      <h2>SELECT TRACK</h2>
+      <div id="track-list"></div>
+      <button type="button" class="menu-btn secondary" id="btn-back-tracks" style="margin-top:1rem">BACK</button>
+    </section>
+
+    <!-- HIGH SCORES -->
+    <section id="screen-scores" class="screen">
+      <h2>HIGH SCORES</h2>
+      <div id="scores-list"></div>
+      <button type="button" class="menu-btn secondary" id="btn-back-scores">BACK</button>
+    </section>
+
+    <!-- RACE -->
+    <section id="screen-race" class="screen">
+      <div id="hud">
+        <div class="hud-left">
+          <div id="lap-info">LAP 1/2</div>
+          <div id="speed-info">0 km/h</div>
+        </div>
+        <div id="clock" aria-label="Race time"></div>
+        <div class="hud-right">PASRALLY</div>
+      </div>
+      <div id="race-wrap">
+        <canvas id="game" width="640" height="480"></canvas>
+      </div>
+      <div id="controls">
+        <div class="steer-row">
+          <label for="steer">STEER</label>
+          <input type="range" id="steer" min="0" max="100" value="50" />
+        </div>
+        <button type="button" id="accel">ACCELERATE</button>
+        <p class="hint">Space / ↑ also accelerate · stay on the road!</p>
+      </div>
+    </section>
+
+    <!-- NAME ENTRY -->
+    <section id="screen-name" class="screen">
+      <h2>TOP 3!</h2>
+      <p>TIME <span id="name-prompt-time">0'00"00</span></p>
+      <p class="muted" style="margin-top:0.5rem">ENTER NAME (MAX 5)</p>
+      <input id="name-input" type="text" maxlength="5" autocomplete="off" spellcheck="false" placeholder="AAA" />
+      <div class="btn-row">
+        <button type="button" class="menu-btn" id="btn-save-name">SAVE</button>
+        <button type="button" class="menu-btn secondary" id="btn-skip-name">SKIP</button>
+      </div>
+    </section>
+
+    <!-- RESULT -->
+    <section id="screen-result" class="screen">
+      <h2 id="result-msg">FINISH!</h2>
+      <div id="result-time">0'00"00</div>
+      <div class="btn-row">
+        <button type="button" class="menu-btn" id="btn-again">RACE AGAIN</button>
+        <button type="button" class="menu-btn secondary" id="btn-menu">MENU</button>
+      </div>
+    </section>
+  </div>
+
+  <script src="tracks.js"></script>
+  <script src="game.js"></script>
+</body>
+</html>
