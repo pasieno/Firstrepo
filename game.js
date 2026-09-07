@@ -38,6 +38,7 @@
   let animId = null;
   let lastTs = 0;
   let accelHeld = false;
+  let steerDragging = false;
   let pendingScore = null; // { trackId, timeMs }
 
   // ---- Canvas sizing ----
@@ -263,6 +264,13 @@
     steerSlider.value = 50;
   }
 
+  // Spring steering wheel back to center when released (phone-friendly)
+  steerSlider.addEventListener('pointerdown', () => { steerDragging = true; });
+  steerSlider.addEventListener('pointerup', () => { steerDragging = false; });
+  steerSlider.addEventListener('pointercancel', () => { steerDragging = false; });
+  window.addEventListener('pointerup', () => { steerDragging = false; });
+
+
   // ---- Race ----
   function startRace(idx) {
     trackIndex = idx;
@@ -270,17 +278,18 @@
     road = expandTrack(track);
     player = {
       z: 0,
-      x: 0, // road-relative: 0=center, ±1 ≈ edges
+      x: 0,
       speed: 0,
-      maxSpeed: 240,
-      accel: 130,
+      maxSpeed: 230,
+      accel: 135,
       brake: 160,
-      coast: 50,
-      steerPower: 2.8,
-      offRoadFactor: 0.85,
-      centrifugal: 0.012,
-      roadLimit: 1.15,
-      softLimit: 1.7,
+      coast: 45,
+      steerPower: 1.9,      // lower so nudges don't yeet
+      offRoadFactor: 0.9,
+      centrifugal: 0.006,
+      curveAssist: 0.028,   // auto hold inside of bends
+      roadLimit: 1.35,      // wider asphalt
+      softLimit: 1.75,
     };
     race = {
       lap: 1,
@@ -356,7 +365,12 @@
     race.lapTime += dt * 1000;
     if (race.crashFlash > 0) race.crashFlash -= dt;
 
-    // Physics — phone-friendly OutRun lateral model
+    if (!steerDragging) {
+      const v = parseFloat(steerSlider.value);
+      steerSlider.value = String(v + (50 - v) * Math.min(1, dt * 8));
+    }
+
+    // Physics — forgiving phone OutRun
     const steer = getSteer();
     const absX = Math.abs(player.x);
     const onRoad = absX < player.roadLimit;
@@ -368,42 +382,39 @@
       player.speed += player.accel * player.offRoadFactor * dt;
     } else {
       player.speed -= player.coast * dt;
-      if (!onRoad) player.speed -= player.brake * 0.15 * dt;
+      if (!onRoad) player.speed -= player.brake * 0.2 * dt;
     }
-    if (!onRoad && player.speed > player.maxSpeed * 0.8) {
-      player.speed -= player.brake * 0.2 * dt;
+    if (!onRoad && player.speed > player.maxSpeed * 0.75) {
+      player.speed -= player.brake * 0.25 * dt;
     }
     player.speed = Math.max(0, Math.min(player.maxSpeed, player.speed));
 
     const segIdx = Math.floor(player.z) % road.length;
     const seg = road[segIdx] || { curve: 0 };
 
-    // No standstill lateral slide (was pushing you into grass at 0 km/h)
-    const speedGate = Math.min(1, player.speed / 35);
+    // Lateral only while rolling
+    const speedGate = Math.min(1, player.speed / 40);
     player.x += steer * player.steerPower * speedGate * dt;
 
-    // Tiny centrifugal — must stay far below steer authority
-    const curvePush = seg.curve * player.centrifugal * spdRatio * spdRatio;
-    player.x -= curvePush * dt;
+    // Outward centrifugal (tiny)
+    player.x -= seg.curve * player.centrifugal * spdRatio * spdRatio * dt;
+    // Inward curve assist so bends don't spit you out
+    player.x += seg.curve * player.curveAssist * spdRatio * dt;
 
-    // Soft center assist for phone play
-    player.x -= player.x * 0.55 * dt;
+    // Always ease toward center
+    player.x -= player.x * 1.1 * dt;
 
-    // Strong reclaim when off asphalt
+    // Edge bumper: stronger the closer you are to leaving asphalt
+    if (absX > player.roadLimit * 0.72) {
+      const edge = (absX - player.roadLimit * 0.72) / (player.softLimit - player.roadLimit * 0.72);
+      player.x -= Math.sign(player.x || 1) * edge * 3.2 * dt;
+    }
+
     if (!onRoad) {
-      const towardRoad = Math.abs(steer) < 0.1 || Math.sign(steer) === -Math.sign(player.x || 1);
-      player.x -= Math.sign(player.x || 1) * (towardRoad ? 2.4 : 1.1) * dt;
+      player.x -= Math.sign(player.x || 1) * 3.0 * dt;
     }
 
-    if (player.x < -player.softLimit) {
-      player.x = -player.softLimit;
-      player.speed *= 0.97;
-      race.crashFlash = 0.1;
-    } else if (player.x > player.softLimit) {
-      player.x = player.softLimit;
-      player.speed *= 0.97;
-      race.crashFlash = 0.1;
-    }
+    player.x = Math.max(-player.softLimit, Math.min(player.softLimit, player.x));
 
     // Advance
     const dz = (player.speed / 100) * dt * 12;
