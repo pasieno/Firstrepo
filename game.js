@@ -278,7 +278,7 @@
       coast: 55,
       steerPower: 3.4,       // lateral authority
       offRoadFactor: 0.72,   // still can accelerate / reclaim
-      centrifugal: 0.24,     // challenging but recoverable (~3x steer margin @ curve5)
+      centrifugal: 0.048,    // ~80% lower than 0.24 per player feedback
       roadLimit: 1.08,       // |x| within this = on road
       softLimit: 1.85,       // outer soft wall
     };
