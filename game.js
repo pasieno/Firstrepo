@@ -280,16 +280,15 @@
       z: 0,
       x: 0,
       speed: 0,
-      maxSpeed: 230,
-      accel: 135,
-      brake: 160,
-      coast: 45,
-      steerPower: 1.9,      // lower so nudges don't yeet
-      offRoadFactor: 0.9,
-      centrifugal: 0.006,
-      curveAssist: 0.028,   // auto hold inside of bends
-      roadLimit: 1.35,      // wider asphalt
-      softLimit: 1.75,
+      maxSpeed: 240,
+      accel: 130,
+      brake: 155,
+      coast: 48,
+      steerPower: 2.5,
+      offRoadFactor: 0.8,
+      centrifugal: 0.09,    // drift out if you don't steer; full steer holds
+      roadLimit: 1.22,
+      softLimit: 1.8,
     };
     race = {
       lap: 1,
@@ -370,7 +369,7 @@
       steerSlider.value = String(v + (50 - v) * Math.min(1, dt * 8));
     }
 
-    // Physics — forgiving phone OutRun
+    // Physics — middle ground: bends push, steering recovers
     const steer = getSteer();
     const absX = Math.abs(player.x);
     const onRoad = absX < player.roadLimit;
@@ -382,36 +381,30 @@
       player.speed += player.accel * player.offRoadFactor * dt;
     } else {
       player.speed -= player.coast * dt;
-      if (!onRoad) player.speed -= player.brake * 0.2 * dt;
+      if (!onRoad) player.speed -= player.brake * 0.18 * dt;
     }
-    if (!onRoad && player.speed > player.maxSpeed * 0.75) {
-      player.speed -= player.brake * 0.25 * dt;
+    if (!onRoad && player.speed > player.maxSpeed * 0.7) {
+      player.speed -= player.brake * 0.22 * dt;
     }
     player.speed = Math.max(0, Math.min(player.maxSpeed, player.speed));
 
     const segIdx = Math.floor(player.z) % road.length;
     const seg = road[segIdx] || { curve: 0 };
 
-    // Lateral only while rolling
-    const speedGate = Math.min(1, player.speed / 40);
+    const speedGate = Math.min(1, player.speed / 28);
     player.x += steer * player.steerPower * speedGate * dt;
 
-    // Outward centrifugal (tiny)
-    player.x -= seg.curve * player.centrifugal * spdRatio * spdRatio * dt;
-    // Inward curve assist so bends don't spit you out
-    player.x += seg.curve * player.curveAssist * spdRatio * dt;
+    // Outward on bends. No auto-steer assist — you must turn.
+    const curvePush = seg.curve * player.centrifugal * (0.25 + 0.75 * spdRatio);
+    player.x -= curvePush * dt;
 
-    // Always ease toward center
-    player.x -= player.x * 1.1 * dt;
-
-    // Edge bumper: stronger the closer you are to leaving asphalt
-    if (absX > player.roadLimit * 0.72) {
-      const edge = (absX - player.roadLimit * 0.72) / (player.softLimit - player.roadLimit * 0.72);
-      player.x -= Math.sign(player.x || 1) * edge * 3.2 * dt;
-    }
+    // Light centering so the car doesn't pin to the wall
+    player.x -= player.x * 0.22 * dt;
 
     if (!onRoad) {
-      player.x -= Math.sign(player.x || 1) * 3.0 * dt;
+      // Can drive back on; extra pull if steering toward the road
+      const toward = Math.abs(steer) < 0.12 || Math.sign(steer) === -Math.sign(player.x || 1);
+      player.x -= Math.sign(player.x || 1) * (toward ? 1.6 : 0.45) * dt;
     }
 
     player.x = Math.max(-player.softLimit, Math.min(player.softLimit, player.x));
@@ -507,19 +500,18 @@
     const baseIdx = Math.floor(player.z);
     const camY = camH + (road[baseIdx % road.length] ? road[baseIdx % road.length].y * 40 : 0);
 
-    // Jake Gordon-style: camX = player.x * roadW; curves accumulate ahead of camera
-    const drawDist = 90;
+    // Visible bends (curve * scale) + modest player offset (not scale*roadW, that looked like instant ejects)
+    const drawDist = 100;
     let x = 0;
     let dx = 0;
-    const camX = player.x * roadW;
 
     const pts = [];
     for (let n = 0; n < drawDist; n++) {
       const i = (baseIdx + n) % road.length;
       const seg = road[i];
       const zWorld = (n - (player.z - baseIdx)) * segLen;
-      if (zWorld <= 0) {
-        dx += seg.curve * 0.12;
+      if (zWorld <= 8) {
+        dx += seg.curve * 0.42;
         x += dx;
         pts.push(null);
         continue;
@@ -528,9 +520,10 @@
       const scale = camDepth / (zWorld / 100);
       const screenY = H / 2 + (scale * yWorld) / 4;
       const screenW = scale * roadW;
-      const screenX = W / 2 + scale * (0 - camX - x);
+      const camShift = player.x * Math.min(W * 0.16, scale * 90);
+      const screenX = W / 2 - camShift + x * scale * 6.5;
       pts.push({ x: screenX, y: screenY, w: screenW, scale, i, seg });
-      dx += seg.curve * 0.12;
+      dx += seg.curve * 0.42;
       x += dx;
     }
 
@@ -743,96 +736,90 @@
   }
 
   function drawCar(W, H) {
-    // Car stays near screen center; road projection carries player.x (classic OutRun).
-    // Moving the sprite by player.x fought the road scale and looked like instant ejects.
-    const cx = W / 2;
-    const cy = H * 0.78;
-    const s = W / 320;
+    // C64 OutRun rear view: wide red Testarossa-like, black tires, spoiler, light bar.
+    const cx = W / 2 + player.x * W * 0.045;
+    const cy = H * 0.80;
+    const s = W / 280;
     const steer = getSteer();
-    const lean = steer * 7;
-    const bob = Math.sin(player.z * 0.8) * (player.speed / player.maxSpeed) * 1.2 * s;
+    const lean = steer * 5;
+    const bob = Math.sin(player.z * 0.9) * (player.speed / player.maxSpeed) * 1.1 * s;
 
     ctx.save();
     ctx.translate(cx, cy + bob);
     ctx.rotate((lean * Math.PI) / 180);
 
-    // Soft shadow (rect stack — wide phone support)
-    ctx.fillStyle = 'rgba(0,0,0,0.22)';
-    ctx.fillRect(-34 * s, 18 * s, 68 * s, 10 * s);
-    ctx.fillStyle = 'rgba(0,0,0,0.35)';
-    ctx.fillRect(-28 * s, 20 * s, 56 * s, 7 * s);
+    // Shadow
+    ctx.fillStyle = 'rgba(0,0,0,0.28)';
+    ctx.fillRect(-36 * s, 16 * s, 72 * s, 8 * s);
 
-    // Rear spoiler wing
+    // Rear tires (chunky, C64-like)
     ctx.fillStyle = '#1a1a1a';
-    ctx.fillRect(-22 * s, -24 * s, 44 * s, 4 * s);
-    ctx.fillRect(-24 * s, -28 * s, 4 * s, 10 * s);
-    ctx.fillRect(20 * s, -28 * s, 4 * s, 10 * s);
+    ctx.fillRect(-38 * s, -2 * s, 14 * s, 22 * s);
+    ctx.fillRect(24 * s, -2 * s, 14 * s, 22 * s);
+    ctx.fillStyle = '#3a3a3a';
+    ctx.fillRect(-36 * s, 2 * s, 10 * s, 14 * s);
+    ctx.fillRect(26 * s, 2 * s, 10 * s, 14 * s);
+    ctx.fillStyle = '#888';
+    ctx.fillRect(-33 * s, 6 * s, 4 * s, 6 * s);
+    ctx.fillRect(29 * s, 6 * s, 4 * s, 6 * s);
 
-    // Main body (chunky wedge)
-    ctx.fillStyle = '#d03028';
-    ctx.fillRect(-32 * s, -6 * s, 64 * s, 26 * s);
-    // Side skirts
-    ctx.fillStyle = '#8a1818';
-    ctx.fillRect(-34 * s, 10 * s, 68 * s, 6 * s);
-    // Nose / hood
-    ctx.fillStyle = '#b02420';
+    // Side pods
+    ctx.fillStyle = '#9a1818';
+    ctx.fillRect(-30 * s, -4 * s, 10 * s, 16 * s);
+    ctx.fillRect(20 * s, -4 * s, 10 * s, 16 * s);
+
+    // Main rear body
+    ctx.fillStyle = '#d42828';
     ctx.beginPath();
-    ctx.moveTo(-24 * s, -6 * s);
-    ctx.lineTo(-18 * s, -20 * s);
-    ctx.lineTo(18 * s, -20 * s);
-    ctx.lineTo(24 * s, -6 * s);
+    ctx.moveTo(-28 * s, 14 * s);
+    ctx.lineTo(28 * s, 14 * s);
+    ctx.lineTo(22 * s, -10 * s);
+    ctx.lineTo(-22 * s, -10 * s);
     ctx.closePath();
     ctx.fill();
-    // Cabin
-    ctx.fillStyle = '#901818';
-    ctx.fillRect(-16 * s, -22 * s, 32 * s, 12 * s);
-    // Windshield (gloss)
-    const win = ctx.createLinearGradient(0, -20 * s, 0, -8 * s);
-    win.addColorStop(0, '#8ec8f0');
-    win.addColorStop(1, '#2a5080');
-    ctx.fillStyle = win;
-    ctx.fillRect(-14 * s, -18 * s, 28 * s, 9 * s);
-    ctx.fillStyle = 'rgba(255,255,255,0.35)';
-    ctx.fillRect(-12 * s, -17 * s, 10 * s, 3 * s);
-    // Hood stripe
-    ctx.fillStyle = '#f0f0f0';
-    ctx.fillRect(-5 * s, -18 * s, 10 * s, 22 * s);
-    ctx.fillStyle = '#2030a0';
-    ctx.fillRect(-3 * s, -16 * s, 6 * s, 18 * s);
-    // Headlights
-    ctx.fillStyle = '#fff8c8';
-    ctx.fillRect(-22 * s, -18 * s, 9 * s, 5 * s);
-    ctx.fillRect(13 * s, -18 * s, 9 * s, 5 * s);
-    ctx.fillStyle = '#ffe060';
-    ctx.fillRect(-20 * s, -17 * s, 5 * s, 3 * s);
-    ctx.fillRect(15 * s, -17 * s, 5 * s, 3 * s);
-    // Grill
-    ctx.fillStyle = '#222';
-    ctx.fillRect(-8 * s, -8 * s, 16 * s, 4 * s);
-    // Tail lights
-    ctx.fillStyle = '#ff2040';
-    ctx.fillRect(-30 * s, 14 * s, 12 * s, 6 * s);
-    ctx.fillRect(18 * s, 14 * s, 12 * s, 6 * s);
-    ctx.fillStyle = '#ff8080';
-    ctx.fillRect(-28 * s, 15 * s, 6 * s, 3 * s);
-    ctx.fillRect(22 * s, 15 * s, 6 * s, 3 * s);
-    // Wheels
+
+    // Cabin / rear deck
+    ctx.fillStyle = '#b01c1c';
+    ctx.fillRect(-16 * s, -18 * s, 32 * s, 12 * s);
+
+    // Rear window (dark, C64 OutRun)
+    ctx.fillStyle = '#141820';
+    ctx.fillRect(-13 * s, -16 * s, 26 * s, 8 * s);
+    ctx.fillStyle = '#4a7098';
+    ctx.fillRect(-11 * s, -15 * s, 8 * s, 3 * s);
+
+    // Spoiler
     ctx.fillStyle = '#111';
-    ctx.fillRect(-34 * s, 2 * s, 11 * s, 18 * s);
-    ctx.fillRect(23 * s, 2 * s, 11 * s, 18 * s);
-    ctx.fillRect(-30 * s, -8 * s, 9 * s, 12 * s);
-    ctx.fillRect(21 * s, -8 * s, 9 * s, 12 * s);
-    // Hubs + tire highlight
-    ctx.fillStyle = '#aaa';
-    ctx.fillRect(-31 * s, 7 * s, 5 * s, 7 * s);
-    ctx.fillRect(26 * s, 7 * s, 5 * s, 7 * s);
-    ctx.fillStyle = '#444';
-    ctx.fillRect(-33 * s, 4 * s, 2 * s, 14 * s);
-    ctx.fillRect(31 * s, 4 * s, 2 * s, 14 * s);
-    // Side mirror nubs
-    ctx.fillStyle = '#ccc';
-    ctx.fillRect(-20 * s, -14 * s, 5 * s, 3 * s);
-    ctx.fillRect(15 * s, -14 * s, 5 * s, 3 * s);
+    ctx.fillRect(-24 * s, -24 * s, 48 * s, 4 * s);
+    ctx.fillRect(-20 * s, -22 * s, 4 * s, 6 * s);
+    ctx.fillRect(16 * s, -22 * s, 4 * s, 6 * s);
+
+    // White center stripe
+    ctx.fillStyle = '#f4f0e8';
+    ctx.fillRect(-3 * s, -8 * s, 6 * s, 20 * s);
+
+    // Rear light bar
+    ctx.fillStyle = '#2a0a0a';
+    ctx.fillRect(-24 * s, 6 * s, 48 * s, 7 * s);
+    ctx.fillStyle = '#ff3030';
+    ctx.fillRect(-22 * s, 7 * s, 12 * s, 5 * s);
+    ctx.fillRect(10 * s, 7 * s, 12 * s, 5 * s);
+    ctx.fillStyle = '#ffb040';
+    ctx.fillRect(-8 * s, 8 * s, 5 * s, 3 * s);
+    ctx.fillRect(3 * s, 8 * s, 5 * s, 3 * s);
+
+    // Bumper + exhausts
+    ctx.fillStyle = '#222';
+    ctx.fillRect(-26 * s, 13 * s, 52 * s, 4 * s);
+    ctx.fillStyle = '#888';
+    ctx.fillRect(-10 * s, 14 * s, 4 * s, 4 * s);
+    ctx.fillRect(6 * s, 14 * s, 4 * s, 4 * s);
+
+    // License plate
+    ctx.fillStyle = '#f0e8c0';
+    ctx.fillRect(-6 * s, 9 * s, 12 * s, 4 * s);
+    ctx.fillStyle = '#222';
+    ctx.fillRect(-4 * s, 10 * s, 8 * s, 2 * s);
 
     ctx.restore();
   }
