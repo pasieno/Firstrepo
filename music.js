@@ -47,19 +47,58 @@
   };
 
   const RACE = {
-    bpm: 156,
+    bpm: 152,
     steps: 16,
-    kick:  [1,0,1,0, 1,0,1,0, 1,0,1,0, 1,0,1,0],
-    snare: [0,0,0,0, 1,0,0,1, 0,0,0,0, 1,0,1,0],
-    hat:   [1,1,1,1, 1,0,1,1, 1,1,1,0, 1,1,1,1],
-    bass:  ['A1','A1','A2','A1', 'A1','C2','A1','E2',
-            'A1','A1','A2','G1', 'A1','C2','E2','A1',
-            'F1','F1','F2','F1', 'F1','A1','C2','F1',
-            'G1','G1','G2','D2', 'G1','B1','D2','G2'],
-    lead:  ['A4','C5','E5','A4', 'C5','E5','A5','E5',
-            'A4','C5','E5','G5', 'E5','C5','A4','E4',
-            'F4','A4','C5','F4', 'A4','C5','F5','C5',
-            'G4','B4','D5','G4', 'B4','D5','G5','D5'],
+    kick:  [
+    1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,
+    1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,
+    1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,
+    1,0,1,0,1,1,0,1,1,0,1,1,1,0,1,1,
+    1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,
+    1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,
+    1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0,
+    1,0,1,0,1,1,0,1,1,0,1,1,1,0,1,1
+  ],
+    snare: [
+    0,0,0,0,1,0,0,1,0,0,0,0,1,0,1,0,
+    0,0,0,0,1,0,0,1,0,0,0,0,1,0,1,0,
+    0,0,0,0,1,0,0,1,0,0,0,0,1,0,1,0,
+    0,0,0,0,1,0,1,0,0,0,1,0,1,1,1,1,
+    0,0,0,0,1,0,0,1,0,0,0,0,1,0,1,0,
+    0,0,0,0,1,0,0,1,0,0,0,0,1,0,1,0,
+    0,0,0,0,1,0,0,1,0,0,0,0,1,0,1,0,
+    0,0,0,0,1,0,1,0,0,0,1,0,1,1,1,1
+  ],
+    hat:   [
+    1,1,1,0,1,0,1,1,1,1,0,1,1,0,1,1,
+    1,1,1,1,1,1,1,1,1,0,1,1,1,1,1,1,
+    1,1,1,0,1,0,1,1,1,1,0,1,1,0,1,1,
+    1,1,1,1,1,1,1,1,1,0,1,1,1,1,1,1,
+    1,1,1,0,1,0,1,1,1,1,0,1,1,0,1,1,
+    1,1,1,1,1,1,1,1,1,0,1,1,1,1,1,1,
+    1,1,1,0,1,0,1,1,1,1,0,1,1,0,1,1,
+    1,1,1,1,1,1,1,1,1,0,1,1,1,1,1,1
+  ],
+    bass:  [
+    'A1', 'A1', 'A2', 'A1', 'C2', 'A1', 'E1', 'A1', 'A1', 'E1', 'A2', 'A1', 'C2', 'A1', 'E2', 'A1',
+    'A1', 'A1', 'C2', 'A1', 'E2', 'A1', 'A2', 'G1', 'A1', 'C2', 'A1', 'E1', 'A2', 'A1', 'E2', 'A1',
+    'F1', 'F1', 'F2', 'F1', 'A1', 'F1', 'C2', 'F1', 'F1', 'C2', 'F2', 'F1', 'A1', 'F1', 'C2', 'F1',
+    'C1', 'C1', 'C2', 'C1', 'E1', 'C1', 'G1', 'C1', 'C1', 'G1', 'C2', 'C1', 'E2', 'C1', 'G1', 'C1',
+    'A1', 'A2', 'A1', 'E1', 'A1', 'C2', 'E2', 'A1', 'A1', 'A1', 'G1', 'A1', 'C2', 'E2', 'A2', 'E1',
+    'F1', 'F2', 'F1', 'C2', 'F1', 'A1', 'C2', 'F1', 'F1', 'F1', 'A1', 'F1', 'C2', 'F2', 'A1', 'F1',
+    'G1', 'G1', 'G2', 'D2', 'G1', 'B1', 'D2', 'G1', 'G1', 'D2', 'G2', 'G1', 'B1', 'G1', 'D2', 'G2',
+    'E1', 'E1', 'E2', 'B1', 'E1', 'G1', 'B1', 'E1', 'E1', 'E2', 'G1', 'E1', 'B1', 'E2', 'G2', 'E1'
+  ],
+    lead:  [
+    'A4', 'C5', 'E5', 'A4', 'C5', 'E5', 'A5', 'E5', 'A4', null, 'C5', 'E5', 'G5', 'E5', 'C5', 'A4',
+    'E5', 'C5', 'A4', 'C5', 'E5', null, 'G5', 'E5', 'A4', 'C5', 'E5', 'A5', 'C5', 'A4', 'E4', 'A4',
+    'F4', 'A4', 'C5', 'F4', 'A4', 'C5', 'F5', 'C5', 'A4', null, 'C5', 'A4', 'F4', 'A4', 'C5', 'F5',
+    'E4', 'G4', 'C5', 'E4', 'G4', 'C5', 'E5', 'C5', 'G4', 'E4', 'C4', 'E4', 'G4', 'C5', 'E5', 'G4',
+    'A4', 'E5', 'C5', 'A4', 'C5', 'A5', 'E5', 'C5', 'A4', 'C5', 'E5', 'G5', 'A5', 'G5', 'E5', 'C5',
+    'F4', 'A4', 'C5', 'F5', 'C5', 'A4', 'F4', 'A4', 'C5', 'F5', null, 'C5', 'A4', 'F4', 'C5', 'A4',
+    'G4', 'B4', 'D5', 'G4', 'B4', 'D5', 'G5', 'D5', 'G4', 'D5', 'B4', 'G4', 'D5', 'B4', 'G4', 'D5',
+    'E4', 'G4', 'B4', 'E5', 'B4', 'G4', 'E4', 'G4', 'B4', 'E5', 'G5', 'E5', 'B4', 'G4', 'E4', 'B4'
+  ],
   };
 
   function ensure() {
@@ -94,6 +133,40 @@
     g.connect(dest || master);
     o.start(t);
     o.stop(t + dur + 0.02);
+  }
+
+
+  function distBass(f, t, dur) {
+    if (!f || !ctx) return;
+    const shaper = ctx.createWaveShaper();
+    const curve = new Float32Array(256);
+    for (let i = 0; i < 256; i++) {
+      const x = (i / 128) - 1;
+      curve[i] = Math.tanh(x * 4.2);
+    }
+    shaper.curve = curve;
+    shaper.oversample = '2x';
+    const lp = ctx.createBiquadFilter();
+    lp.type = 'lowpass';
+    lp.frequency.value = 320;
+    lp.Q.value = 0.7;
+    const o1 = ctx.createOscillator();
+    const o2 = ctx.createOscillator();
+    o1.type = 'sawtooth';
+    o2.type = 'square';
+    o1.frequency.setValueAtTime(f, t);
+    o2.frequency.setValueAtTime(f * 0.5, t);
+    const g = envGain(t, dur, 0.55);
+    o1.connect(shaper);
+    o2.connect(shaper);
+    shaper.connect(lp);
+    lp.connect(g);
+    g.connect(master);
+    o1.start(t);
+    o2.start(t);
+    o1.stop(t + dur + 0.02);
+    o2.stop(t + dur + 0.02);
+    tone('sine', f * 0.5, t, dur * 0.95, 0.22);
   }
 
   function kick(t) {
@@ -148,13 +221,16 @@
     const stepDur = 60 / s.bpm / 4;
     const t = ctx.currentTime + 0.03;
     const i = step % s.bass.length;
-    const barStep = i % s.steps;
+    const barStep = s.kick.length > s.steps ? i % s.kick.length : i % s.steps;
     if (s.kick[barStep]) kick(t);
     if (s.snare[barStep]) snare(t);
     if (s.hat[barStep]) hat(t, barStep % 4 === 2);
     const b = s.bass[i];
     const lead = s.lead[i];
-    if (b) tone(mode === 'race' ? 'square' : 'triangle', freq(b), t, stepDur * 0.9, mode === 'race' ? 0.28 : 0.32);
+    if (b) {
+      if (mode === 'race') distBass(freq(b), t, stepDur * 0.92);
+      else tone('triangle', freq(b), t, stepDur * 0.9, 0.32);
+    }
     if (lead) tone('square', freq(lead), t, stepDur * 0.85, mode === 'race' ? 0.16 : 0.2);
     if (mode === 'race' && lead) {
       tone('square', freq(lead) * 2, t, stepDur * 0.4, 0.05);
