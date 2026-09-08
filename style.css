@@ -395,3 +395,20 @@ h2 {
   filter: grayscale(0);
   line-height: 1;
 }
+
+#btn-mute {
+  position: fixed;
+  top: 8px;
+  right: 8px;
+  z-index: 20;
+  font-family: 'Courier New', Courier, monospace;
+  font-size: 0.65rem;
+  letter-spacing: 0.08em;
+  color: #111;
+  background: #e8c840;
+  border: 3px solid #fff;
+  border-bottom-color: #8a7010;
+  border-right-color: #8a7010;
+  padding: 0.35rem 0.45rem;
+  cursor: pointer;
+}

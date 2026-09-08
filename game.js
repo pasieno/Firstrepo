@@ -65,6 +65,7 @@
       document.getElementById('hud').style.display = 'none';
       document.getElementById('controls').style.display = 'none';
     }
+    if (window.PasrallyMusic) PasrallyMusic.setMode(name === 'race' ? 'race' : 'menu');
   }
 
   // ---- High scores ----
