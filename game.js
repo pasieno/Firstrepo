@@ -4,7 +4,7 @@
 (function () {
   'use strict';
 
-  const STORAGE_KEY = 'pasrally2000_scores';
+  const STORAGE_KEY = 'pasrally2000_scores_v2';
   const NAME_MAX = 5;
 
   // ---- DOM ----
@@ -285,9 +285,9 @@
       accel: 130,
       brake: 155,
       coast: 48,
-      steerPower: 1.35,
+      steerPower: 1.85,
       offRoadFactor: 0.8,
-      centrifugal: 0.18,    // must steer on bends; full lock still holds
+      centrifugal: 0.28,    // no-steer leaves the road; counter-steer holds
       roadLimit: 1.22,
       softLimit: 1.8,
     };
@@ -399,13 +399,11 @@
     const curvePush = seg.curve * player.centrifugal * (0.25 + 0.75 * spdRatio);
     player.x -= curvePush * dt;
 
-    // Light centering so the car doesn't pin to the wall
-    player.x -= player.x * 0.12 * dt;
-
+    // No auto-center. Grass only lets you back on if you steer toward the road.
     if (!onRoad) {
-      // Can drive back on; extra pull if steering toward the road
-      const toward = Math.abs(steer) < 0.12 || Math.sign(steer) === -Math.sign(player.x || 1);
-      player.x -= Math.sign(player.x || 1) * (toward ? 1.6 : 0.45) * dt;
+      const toward = Math.abs(steer) > 0.18 && Math.sign(steer) === -Math.sign(player.x || 1);
+      if (toward) player.x -= Math.sign(player.x || 1) * 1.8 * dt;
+      if (player.speed > 95) player.speed -= 220 * dt;
     }
 
     player.x = Math.max(-player.softLimit, Math.min(player.softLimit, player.x));
