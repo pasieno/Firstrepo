@@ -284,9 +284,9 @@
       accel: 130,
       brake: 155,
       coast: 48,
-      steerPower: 2.5,
+      steerPower: 1.35,
       offRoadFactor: 0.8,
-      centrifugal: 0.09,    // drift out if you don't steer; full steer holds
+      centrifugal: 0.18,    // must steer on bends; full lock still holds
       roadLimit: 1.22,
       softLimit: 1.8,
     };
@@ -399,7 +399,7 @@
     player.x -= curvePush * dt;
 
     // Light centering so the car doesn't pin to the wall
-    player.x -= player.x * 0.22 * dt;
+    player.x -= player.x * 0.12 * dt;
 
     if (!onRoad) {
       // Can drive back on; extra pull if steering toward the road
